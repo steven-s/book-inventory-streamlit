@@ -2,6 +2,8 @@
 
 A Streamlit application for scanning book barcodes, saving ISBNs in SQLite, enriching records with Open Library metadata, and exporting the inventory as CSV.
 
+100% Vibe Coded in Codex
+
 ## Setup
 
 ```bash
