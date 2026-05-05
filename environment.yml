@@ -1,0 +1,8 @@
+name: book-inventory
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - streamlit>=1.34
+  - pandas>=2.2
+  - requests>=2.31

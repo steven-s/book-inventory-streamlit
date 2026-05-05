@@ -93,7 +93,7 @@ with toolbar_right:
         data=df.to_csv(index=False).encode("utf-8"),
         file_name="book_inventory.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
         disabled=df.empty,
     )
 
@@ -117,7 +117,7 @@ table_cols = [
     "scan_count",
 ]
 if filtered.empty:
-    st.dataframe(filtered, hide_index=True, use_container_width=True)
+    st.dataframe(filtered, hide_index=True, width="stretch")
 else:
     pager_left, pager_middle, pager_right = st.columns([1, 2, 1])
     with pager_left:
@@ -132,13 +132,13 @@ else:
 
     with pager_right:
         prev_col, next_col = st.columns(2)
-        if prev_col.button("Prev", disabled=st.session_state.inventory_page <= 1, use_container_width=True):
+        if prev_col.button("Prev", disabled=st.session_state.inventory_page <= 1, width="stretch"):
             st.session_state.inventory_page -= 1
             st.rerun()
         if next_col.button(
             "Next",
             disabled=st.session_state.inventory_page >= total_pages,
-            use_container_width=True,
+            width="stretch",
         ):
             st.session_state.inventory_page += 1
             st.rerun()
@@ -150,7 +150,7 @@ else:
     table_state = st.dataframe(
         table_input,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         on_select="rerun",
         selection_mode="single-row",
         column_config={
@@ -236,7 +236,7 @@ with st.expander("Current Book Details"):
                 st.rerun()
 
         col_a, col_b = st.columns(2)
-        if col_a.button("Retry metadata lookup", use_container_width=True):
+        if col_a.button("Retry metadata lookup", width="stretch"):
             try:
                 metadata = lookup_isbn(selected_row["isbn13"])
                 update_book_metadata(conn, isbn13=selected_row["isbn13"], metadata=metadata)
@@ -245,7 +245,7 @@ with st.expander("Current Book Details"):
             except OpenLibraryError as exc:
                 mark_lookup_error(conn, isbn13=selected_row["isbn13"], error=str(exc))
                 st.warning(f"Open Library lookup did not finish: {exc}")
-        if col_b.button("Delete record", use_container_width=True):
+        if col_b.button("Delete record", width="stretch"):
             delete_book(conn, int(selected))
             st.success("Record deleted.")
             st.rerun()
