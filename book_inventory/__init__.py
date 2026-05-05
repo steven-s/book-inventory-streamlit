@@ -1,0 +1,2 @@
+"""Book inventory application package."""
+
