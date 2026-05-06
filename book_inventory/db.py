@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Mapping, Optional
+
+from book_inventory.metadata.models import BookMetadata
 
 DB_PATH = Path("data/book_inventory.sqlite3")
 
@@ -81,8 +83,9 @@ def update_book_metadata(
     conn: sqlite3.Connection,
     *,
     isbn13: str,
-    metadata: dict[str, Any],
+    metadata: BookMetadata | Mapping[str, Any],
 ) -> None:
+    fields = metadata.to_db_fields() if isinstance(metadata, BookMetadata) else metadata
     conn.execute(
         """
         UPDATE books SET
@@ -101,18 +104,18 @@ def update_book_metadata(
         WHERE isbn13 = ?
         """,
         (
-            metadata.get("title"),
-            metadata.get("subtitle"),
-            metadata.get("authors"),
-            metadata.get("publishers"),
-            metadata.get("publish_date"),
-            metadata.get("page_count"),
-            metadata.get("languages"),
-            metadata.get("subjects"),
-            metadata.get("cover_url"),
-            metadata.get("open_library_url"),
-            metadata.get("lookup_status", "found"),
-            metadata.get("lookup_error"),
+            fields.get("title"),
+            fields.get("subtitle"),
+            fields.get("authors"),
+            fields.get("publishers"),
+            fields.get("publish_date"),
+            fields.get("page_count"),
+            fields.get("languages"),
+            fields.get("subjects"),
+            fields.get("cover_url"),
+            fields.get("open_library_url"),
+            fields.get("lookup_status", "found"),
+            fields.get("lookup_error"),
             isbn13,
         ),
     )

@@ -3,37 +3,18 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+
+from book_inventory.metadata.http import SESSION, TIMEOUT_SECONDS
+from book_inventory.metadata.models import BookMetadata
 
 BASE_URL = "https://openlibrary.org"
-TIMEOUT_SECONDS = (5, 20)
 
 
-def _session() -> requests.Session:
-    session = requests.Session()
-    retries = Retry(
-        total=2,
-        connect=2,
-        read=2,
-        backoff_factor=0.5,
-        status_forcelist=(429, 500, 502, 503, 504),
-        allowed_methods=("GET",),
-    )
-    adapter = HTTPAdapter(max_retries=retries)
-    session.mount("https://", adapter)
-    session.headers.update({"User-Agent": "book-inventory-streamlit/0.1"})
-    return session
+class OpenLibraryProviderError(RuntimeError):
+    pass
 
 
-SESSION = _session()
-
-
-class OpenLibraryError(RuntimeError):
-    """Raised when Open Library cannot return usable book metadata."""
-
-
-def lookup_isbn(isbn: str) -> dict[str, Any]:
+def lookup(isbn: str) -> BookMetadata:
     edition = _get_json(f"{BASE_URL}/isbn/{isbn}.json")
     authors = _resolve_authors(edition)
     work = _resolve_first_work(edition)
@@ -46,36 +27,34 @@ def lookup_isbn(isbn: str) -> dict[str, Any]:
 
     title = edition.get("title") or (work or {}).get("title")
     if not title:
-        raise OpenLibraryError("Open Library found the ISBN but did not return a title.")
+        raise OpenLibraryProviderError("Open Library found the ISBN but did not return a title.")
 
-    return {
-        "title": title,
-        "subtitle": edition.get("subtitle"),
-        "authors": ", ".join(authors) if authors else None,
-        "publishers": _join(edition.get("publishers")),
-        "publish_date": edition.get("publish_date"),
-        "page_count": edition.get("number_of_pages"),
-        "languages": _join_language_keys(edition.get("languages")),
-        "subjects": _join(subjects[:12]),
-        "description": description,
-        "cover_url": f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false",
-        "open_library_url": f"{BASE_URL}/isbn/{isbn}",
-        "lookup_status": "found",
-        "lookup_error": None,
-    }
+    return BookMetadata(
+        title=title,
+        subtitle=edition.get("subtitle"),
+        authors=", ".join(authors) if authors else None,
+        publishers=_join(edition.get("publishers")),
+        publish_date=edition.get("publish_date"),
+        page_count=edition.get("number_of_pages"),
+        languages=_join_language_keys(edition.get("languages")),
+        subjects=_join(subjects[:12]),
+        description=description,
+        cover_url=f"https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false",
+        source_url=f"{BASE_URL}/isbn/{isbn}",
+    )
 
 
 def _get_json(url: str) -> dict[str, Any]:
     try:
         response = SESSION.get(url, timeout=TIMEOUT_SECONDS)
     except requests.RequestException as exc:
-        raise OpenLibraryError(f"Could not reach Open Library: {exc}") from exc
+        raise OpenLibraryProviderError(f"Could not reach Open Library: {exc}") from exc
     if response.status_code == 404:
-        raise OpenLibraryError("No Open Library record was found for this ISBN.")
+        raise OpenLibraryProviderError("No Open Library record was found for this ISBN.")
     try:
         response.raise_for_status()
     except requests.HTTPError as exc:
-        raise OpenLibraryError(f"Open Library returned HTTP {response.status_code}.") from exc
+        raise OpenLibraryProviderError(f"Open Library returned HTTP {response.status_code}.") from exc
     return response.json()
 
 
@@ -87,7 +66,7 @@ def _resolve_authors(edition: dict[str, Any]) -> List[str]:
             continue
         try:
             data = _get_json(f"{BASE_URL}{key}.json")
-        except OpenLibraryError:
+        except OpenLibraryProviderError:
             continue
         name = data.get("name")
         if name:
@@ -104,7 +83,7 @@ def _resolve_first_work(edition: dict[str, Any]) -> Optional[dict[str, Any]]:
         return None
     try:
         return _get_json(f"{BASE_URL}{key}.json")
-    except OpenLibraryError:
+    except OpenLibraryProviderError:
         return None
 
 
