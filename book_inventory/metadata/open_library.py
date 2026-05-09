@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 import requests
 
@@ -58,8 +58,8 @@ def _get_json(url: str) -> dict[str, Any]:
     return response.json()
 
 
-def _resolve_authors(edition: dict[str, Any]) -> List[str]:
-    names: List[str] = []
+def _resolve_authors(edition: dict[str, Any]) -> list[str]:
+    names: list[str] = []
     for author in edition.get("authors", []):
         key = author.get("key")
         if not key:
@@ -74,7 +74,7 @@ def _resolve_authors(edition: dict[str, Any]) -> List[str]:
     return names
 
 
-def _resolve_first_work(edition: dict[str, Any]) -> Optional[dict[str, Any]]:
+def _resolve_first_work(edition: dict[str, Any]) -> dict[str, Any] | None:
     works = edition.get("works") or []
     if not works:
         return None
@@ -87,19 +87,19 @@ def _resolve_first_work(edition: dict[str, Any]) -> Optional[dict[str, Any]]:
         return None
 
 
-def _join(values: Optional[List[Any]]) -> Optional[str]:
+def _join(values: list[Any] | None) -> str | None:
     if not values:
         return None
     return ", ".join(str(value) for value in values if value)
 
 
-def _join_language_keys(values: Optional[List[dict[str, str]]]) -> Optional[str]:
+def _join_language_keys(values: list[dict[str, str]] | None) -> str | None:
     if not values:
         return None
     return ", ".join(value["key"].removeprefix("/languages/") for value in values if value.get("key"))
 
 
-def _description_text(value: Any) -> Optional[str]:
+def _description_text(value: Any) -> str | None:
     if isinstance(value, str):
         return value
     if isinstance(value, dict):

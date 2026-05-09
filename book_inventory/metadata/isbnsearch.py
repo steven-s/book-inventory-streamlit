@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import html
 import re
-from typing import Optional
 
 import requests
 
 from book_inventory.metadata.http import SESSION, TIMEOUT_SECONDS
 from book_inventory.metadata.models import BookMetadata
+
+BASE_URL = "https://isbnsearch.org"
 
 
 class ISBNsearchProviderError(RuntimeError):
@@ -15,7 +16,7 @@ class ISBNsearchProviderError(RuntimeError):
 
 
 def lookup(isbn: str) -> BookMetadata:
-    url = f"https://isbnsearch.org/isbn/{isbn}"
+    url = f"{BASE_URL}/isbn/{isbn}"
     try:
         response = SESSION.get(url, timeout=TIMEOUT_SECONDS)
     except requests.RequestException as exc:
@@ -44,7 +45,7 @@ def lookup(isbn: str) -> BookMetadata:
     )
 
 
-def _extract_h1(page: str) -> Optional[str]:
+def _extract_h1(page: str) -> str | None:
     match = re.search(r"<h1[^>]*>(.*?)</h1>", page, flags=re.IGNORECASE | re.DOTALL)
     if not match:
         return None
@@ -65,7 +66,7 @@ def _extract_isbnsearch_fields(page: str) -> dict[str, str]:
     return fields
 
 
-def _extract_preload_image(page: str) -> Optional[str]:
+def _extract_preload_image(page: str) -> str | None:
     match = re.search(r'<link[^>]+rel="preload"[^>]+as="image"[^>]+href="([^"]+)"', page, flags=re.IGNORECASE)
     if not match:
         return None

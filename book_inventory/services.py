@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Optional
 
 from book_inventory.db import mark_lookup_error, update_book_metadata, upsert_scan
 from book_inventory.isbn import normalize_isbn, split_isbn
@@ -12,10 +11,10 @@ from book_inventory.metadata.models import BookMetadata
 
 @dataclass
 class ScanResult:
-    isbn13: Optional[str]
-    isbn10: Optional[str] = None
-    metadata: Optional[BookMetadata] = None
-    error: Optional[str] = None
+    isbn13: str | None
+    isbn10: str | None = None
+    metadata: BookMetadata | None = None
+    error: str | None = None
 
     @property
     def is_valid(self) -> bool:

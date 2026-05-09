@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+ISBN13_PREFIX = "978"
 
 
 def normalize_isbn(value: str) -> str:
@@ -29,25 +29,24 @@ def is_valid_isbn10(isbn: str) -> bool:
 def is_valid_isbn13(isbn: str) -> bool:
     if len(isbn) != 13 or not isbn.isdigit():
         return False
-    total = 0
-    for index, char in enumerate(isbn[:12]):
-        total += int(char) * (1 if index % 2 == 0 else 3)
-    check_digit = (10 - (total % 10)) % 10
-    return check_digit == int(isbn[-1])
+    return _isbn13_check_digit(isbn[:12]) == int(isbn[-1])
 
 
 def isbn10_to_isbn13(isbn10: str) -> str:
     if not is_valid_isbn10(isbn10):
         raise ValueError("Invalid ISBN-10")
-    body = "978" + isbn10[:9]
+    body = ISBN13_PREFIX + isbn10[:9]
+    return f"{body}{_isbn13_check_digit(body)}"
+
+
+def _isbn13_check_digit(body: str) -> int:
     total = 0
     for index, char in enumerate(body):
         total += int(char) * (1 if index % 2 == 0 else 3)
-    check_digit = (10 - (total % 10)) % 10
-    return f"{body}{check_digit}"
+    return (10 - (total % 10)) % 10
 
 
-def split_isbn(value: str) -> Tuple[Optional[str], Optional[str]]:
+def split_isbn(value: str) -> tuple[str | None, str | None]:
     isbn = normalize_isbn(value)
     if is_valid_isbn13(isbn):
         return (isbn, None)

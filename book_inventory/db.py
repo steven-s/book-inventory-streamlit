@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Any, List, Mapping, Optional
+from typing import Any, Mapping
 
 from book_inventory.metadata.models import BookMetadata
 
@@ -61,7 +61,7 @@ def upsert_scan(
     *,
     isbn_raw: str,
     isbn13: str,
-    isbn10: Optional[str],
+    isbn10: str | None,
 ) -> sqlite3.Row:
     conn.execute(
         """
@@ -178,7 +178,7 @@ def get_book_by_isbn13(conn: sqlite3.Connection, isbn13: str) -> sqlite3.Row:
     return row
 
 
-def list_books(conn: sqlite3.Connection) -> List[sqlite3.Row]:
+def list_books(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
         """
         SELECT
