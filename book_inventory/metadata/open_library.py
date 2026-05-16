@@ -16,8 +16,10 @@ class OpenLibraryProviderError(RuntimeError):
 
 def lookup(isbn: str) -> BookMetadata:
     edition = _get_json(f"{BASE_URL}/isbn/{isbn}.json")
-    authors = _resolve_authors(edition)
     work = _resolve_first_work(edition)
+    authors = _resolve_authors(edition)
+    if not authors and work:
+        authors = _resolve_authors(work)
 
     subjects = edition.get("subjects") or []
     description = None
@@ -60,10 +62,7 @@ def _get_json(url: str) -> dict[str, Any]:
 
 def _resolve_authors(edition: dict[str, Any]) -> list[str]:
     names: list[str] = []
-    for author in edition.get("authors", []):
-        key = author.get("key")
-        if not key:
-            continue
+    for key in _author_keys(edition.get("authors", [])):
         try:
             data = _get_json(f"{BASE_URL}{key}.json")
         except OpenLibraryProviderError:
@@ -72,6 +71,15 @@ def _resolve_authors(edition: dict[str, Any]) -> list[str]:
         if name:
             names.append(name)
     return names
+
+
+def _author_keys(authors: list[dict[str, Any]]) -> list[str]:
+    keys: list[str] = []
+    for author in authors:
+        key = author.get("key") or (author.get("author") or {}).get("key")
+        if key:
+            keys.append(key)
+    return keys
 
 
 def _resolve_first_work(edition: dict[str, Any]) -> dict[str, Any] | None:
