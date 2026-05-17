@@ -51,7 +51,9 @@ def render_inventory_table(filtered: pd.DataFrame) -> None:
 
     page_start = (st.session_state.inventory_page - 1) * page_size
     page_end = page_start + page_size
-    table_input = filtered.iloc[page_start:page_end][TABLE_COLUMNS].set_index("id")
+    table_page = filtered.iloc[page_start:page_end].copy()
+    table_page["isbn13"] = table_page["isbn13"].fillna(table_page["isbn_raw"])
+    table_input = table_page[TABLE_COLUMNS].set_index("id")
     table_state = st.dataframe(
         table_input,
         hide_index=True,

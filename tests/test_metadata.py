@@ -1,4 +1,9 @@
-from book_inventory.metadata.isbnsearch import _extract_h1, _extract_isbnsearch_fields, _extract_preload_image
+from book_inventory.metadata.isbnsearch import (
+    _extract_h1,
+    _extract_isbnsearch_fields,
+    _extract_preload_image,
+    _is_verification_page,
+)
 from book_inventory.metadata.lookup import _merge_metadata
 from book_inventory.metadata.models import BookMetadata
 from book_inventory.metadata.open_library import _author_keys
@@ -26,6 +31,15 @@ def test_book_metadata_maps_source_url_to_existing_db_column():
     metadata = BookMetadata(title="Example", source_url="https://example.com")
 
     assert metadata.to_db_fields()["open_library_url"] == "https://example.com"
+
+
+def test_isbnsearch_verification_pages_are_detected():
+    page = """
+    <h1>Please Verify to Continue</h1>
+    <form id="recaptcha" action="" method="post"></form>
+    """
+
+    assert _is_verification_page(page)
 
 
 def test_open_library_author_keys_support_edition_and_work_shapes():

@@ -44,6 +44,7 @@ def render_details_form(conn: sqlite3.Connection, selected: int, selected_row: p
     with st.form("record_details_form"):
         st.subheader("Book details")
         st.text_input("ISBN-13", value=text_value(selected_row, "isbn13"), disabled=True)
+        st.text_input("Printed ISBN", value=text_value(selected_row, "isbn_raw"), disabled=True)
         detail_title = st.text_input("Title", value=text_value(selected_row, "title"))
         detail_subtitle = st.text_input("Subtitle", value=text_value(selected_row, "subtitle"))
         detail_authors = st.text_input("Authors", value=text_value(selected_row, "authors"))

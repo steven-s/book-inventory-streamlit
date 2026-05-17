@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 
-from book_inventory.db import mark_lookup_error, update_book_metadata, upsert_scan
+from book_inventory.db import insert_invalid_printed_isbn, mark_lookup_error, update_book_metadata, upsert_scan
 from book_inventory.isbn import normalize_isbn, split_isbn
 from book_inventory.metadata import MetadataLookupError, lookup_isbn
 from book_inventory.metadata.models import BookMetadata
@@ -40,3 +40,11 @@ def scan_book(conn: sqlite3.Connection, raw_isbn: str) -> ScanResult:
 
     update_book_metadata(conn, isbn13=isbn13, metadata=metadata)
     return ScanResult(isbn13=isbn13, isbn10=isbn10, metadata=metadata)
+
+
+def save_invalid_printed_isbn(conn: sqlite3.Connection, raw_isbn: str) -> ScanResult:
+    insert_invalid_printed_isbn(conn, isbn_raw=raw_isbn)
+    return ScanResult(
+        isbn13=None,
+        error="Saved invalid printed ISBN for manual review.",
+    )

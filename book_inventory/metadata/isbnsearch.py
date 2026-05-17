@@ -29,6 +29,9 @@ def lookup(isbn: str) -> BookMetadata:
         raise ISBNsearchProviderError(f"ISBNsearch returned HTTP {response.status_code}.") from exc
 
     page = response.text
+    if _is_verification_page(page):
+        raise ISBNsearchProviderError("ISBNsearch returned a human verification page.")
+
     title = _extract_h1(page)
     fields = _extract_isbnsearch_fields(page)
     if not title:
@@ -50,6 +53,13 @@ def _extract_h1(page: str) -> str | None:
     if not match:
         return None
     return _clean_html(match.group(1))
+
+
+def _is_verification_page(page: str) -> bool:
+    title = _extract_h1(page)
+    if title == "Please Verify to Continue":
+        return True
+    return "g-recaptcha" in page or 'id="recaptcha"' in page
 
 
 def _extract_isbnsearch_fields(page: str) -> dict[str, str]:

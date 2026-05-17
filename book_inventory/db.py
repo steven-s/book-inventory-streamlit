@@ -79,6 +79,46 @@ def upsert_scan(
     return get_book_by_isbn13(conn, isbn13)
 
 
+def insert_invalid_printed_isbn(
+    conn: sqlite3.Connection,
+    *,
+    isbn_raw: str,
+) -> sqlite3.Row:
+    existing = conn.execute(
+        """
+        SELECT * FROM books
+        WHERE isbn13 IS NULL AND isbn_raw = ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (isbn_raw,),
+    ).fetchone()
+    if existing:
+        conn.execute(
+            """
+            UPDATE books
+            SET scan_count = scan_count + 1,
+                last_scanned_at = CURRENT_TIMESTAMP,
+                lookup_status = 'manual_review',
+                lookup_error = 'Invalid printed ISBN saved manually.'
+            WHERE id = ?
+            """,
+            (existing["id"],),
+        )
+        conn.commit()
+        return get_book_by_id(conn, existing["id"])
+
+    cursor = conn.execute(
+        """
+        INSERT INTO books (isbn_raw, lookup_status, lookup_error)
+        VALUES (?, 'manual_review', 'Invalid printed ISBN saved manually.')
+        """,
+        (isbn_raw,),
+    )
+    conn.commit()
+    return get_book_by_id(conn, cursor.lastrowid)
+
+
 def update_book_metadata(
     conn: sqlite3.Connection,
     *,
@@ -178,11 +218,18 @@ def get_book_by_isbn13(conn: sqlite3.Connection, isbn13: str) -> sqlite3.Row:
     return row
 
 
+def get_book_by_id(conn: sqlite3.Connection, book_id: int) -> sqlite3.Row:
+    row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
+    if row is None:
+        raise LookupError(f"No book with ID {book_id}")
+    return row
+
+
 def list_books(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     return conn.execute(
         """
         SELECT
-            id, isbn13, isbn10, title, subtitle, authors, publishers, publish_date,
+            id, isbn13, isbn10, isbn_raw, title, subtitle, authors, publishers, publish_date,
             page_count, languages, subjects, cover_url, open_library_url,
             lookup_status, lookup_error, scan_count, created_at, updated_at,
             last_scanned_at
